@@ -6,22 +6,11 @@ pygame.init()
 
 WIDTH, HEIGHT = 1200, 500
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-BACKGROUND = pygame.image.load("Background.png").convert()
-BACKGROUND2 = pygame.image.load("Background.png").convert()
-MIDGROUND = pygame.image.load("Midground.png").convert_alpha()
-MIDGROUND2 = pygame.image.load("Midground.png").convert_alpha()
-FOREGROUND = pygame.image.load("Foreground.png").convert_alpha()
-FOREGROUND2 = pygame.image.load("Foreground.png").convert_alpha()
 
 pygame.display.set_caption("Side Scroller")
 
 CLOCK = pygame.time.Clock()
-BGX = 0
-BGX2 = BACKGROUND.get_width()
-FGX = 0
-FGX2 = FOREGROUND.get_width()
-MGX = 0
-MGX2 = MIDGROUND.get_width()
+
 score = 0
 
 DGREY = (100, 100, 100)
@@ -29,10 +18,24 @@ GREY = (150, 150, 150)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
-JUMPTIME = 15
+JUMPTIME = 25
+GRAVITY = 5
 
 
-class player(object):
+class Background():
+    def __init__(self, x, image):
+        self.image = image
+        self.xOne = 0
+        self.xTwo = image.get_width()
+
+    def checkBackgroundOffscreen(self):
+        if self.xOne < self.image.get_width()*-1:
+            self.xOne = self.image.get_width()
+        if self.xTwo < self.image.get_width()*-1:
+            self.xTwo = self.image.get_width()
+
+
+class Player():
     runSkins = [
         pygame.image.load("C1.png"),
         pygame.image.load("C2.png"),
@@ -50,7 +53,7 @@ class player(object):
         self.height = height
         self.v = 5
         self.slideUp = False
-        self.jumpTime = JUMPTIME
+        self.jumptime = JUMPTIME
         self.slideTime = 20
         self.runCount = 0
         self.rect = pygame.Rect(self.x, self.y, 50, 60)
@@ -78,23 +81,23 @@ class player(object):
 
     def jump(self):
         if self.jumping:
-            if self.jumpTime >= -JUMPTIME:
+            if self.jumptime >= -JUMPTIME:
                 neg = 1
-                if self.jumpTime < 0:
+                if self.jumptime < 0:
                     neg = -1
                     if onFloor:
                         self.jumping = False
                 if self.jumping:
-                    self.y -= self.jumpTime ** 2 * 0.10 * neg
-                    self.jumpTime -= 1
+                    self.y += GRAVITY - self.jumptime ** 2 * (1/JUMPTIME) * neg
+                    self.jumptime -= 1
                 else:
-                    self.jumpTime = JUMPTIME
+                    self.jumptime = JUMPTIME
             else:
                 self.jumping = False
-                self.jumpTime = JUMPTIME
+                self.jumptime = JUMPTIME
 
 
-class floor(object):
+class Floor(object):
     def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
@@ -108,12 +111,12 @@ class floor(object):
 
 
 def redrawGameWindow():
-    SCREEN.blit(BACKGROUND, (BGX, 0))
-    SCREEN.blit(BACKGROUND, (BGX2, 0))
-    SCREEN.blit(MIDGROUND, (MGX, 0))
-    SCREEN.blit(MIDGROUND, (MGX2, 0))
-    SCREEN.blit(FOREGROUND, (FGX, 0))
-    SCREEN.blit(FOREGROUND, (FGX2, 0))
+    SCREEN.blit(background.image, (background.xOne, 0))
+    SCREEN.blit(background.image, (background.xTwo, 0))
+    SCREEN.blit(midground.image, (midground.xOne, 0))
+    SCREEN.blit(midground.image, (midground.xTwo, 0))
+    SCREEN.blit(foreground.image, (foreground.xOne, 0))
+    SCREEN.blit(foreground.image, (foreground.xTwo, 0))
     for nfloor in floors:
         nfloor.draw(SCREEN)
     man.draw(SCREEN)
@@ -138,7 +141,7 @@ def endScreen():
     FPS = 60
     floors = []
     man.x, man.y = 200, 150
-    floors.append(floor(0, HEIGHT / 2, WIDTH, 20))
+    floors.append(Floor(0, HEIGHT / 2, WIDTH, 20))
     SCREEN.fill(BLACK)
     while ending:
         largeFont = pygame.font.SysFont("courier", 80)
@@ -157,8 +160,8 @@ def endScreen():
             SCREEN.blit(highScore, (WIDTH / 2 - highScore.get_width() / 2, HEIGHT / 2 + HEIGHT / 4),)
         else:
             SCREEN.blit(newHighScore, (WIDTH / 2 - newHighScore.get_width() / 2, HEIGHT / 2 + HEIGHT / 4),)
-        
-        SCREEN.blit(restart, (WIDTH / 2 - restart.get_width() /2, HEIGHT / 2 + HEIGHT / 3))
+
+        SCREEN.blit(restart, (WIDTH / 2 - restart.get_width() / 2, HEIGHT / 2 + HEIGHT / 3))
         pygame.display.update()
 
         for event in pygame.event.get():
@@ -173,8 +176,12 @@ def endScreen():
     score = 0
 
 
+foreground = Background(0, pygame.image.load("Foreground.png").convert_alpha())
+midground = Background(0, pygame.image.load("Midground.png").convert_alpha())
+background = Background(0, pygame.image.load("Background.png").convert())
+
 font = pygame.font.SysFont("courier", 30, True)
-man = player(200, 150, 64, 64)
+man = Player(200, 150, 64, 64)
 
 run = True
 FPS = 60
@@ -183,17 +190,17 @@ onFloor = True
 floors = []
 
 pygame.time.set_timer(pygame.USEREVENT + 1, 2000)
-floors.append(floor(0, HEIGHT / 2, WIDTH, 20))
+floors.append(Floor(0, HEIGHT / 2, WIDTH, 20))
 
 
 while run:
-    CLOCK.tick(FPS)
-    MGX -= 3
-    MGX2 -= 3
-    FGX -= 5
-    FGX2 -= 5
+    CLOCK.tick(FPS+score)
+    midground.xOne -= 3
+    midground.xTwo -= 3
+    foreground.xOne -= 5
+    foreground.xTwo -= 5
     impeded = False
-    ouch = False
+    impededAbove = False
     onFloor = False
 
     for newfloor in floors:
@@ -210,15 +217,15 @@ while run:
 
         elif man.top.colliderect(newfloor.rect):
             jumping = False
-            jumpTime = JUMPTIME
-            ouch = True
+            jumptime = JUMPTIME
+            impededAbove = True
 
         if newfloor.x < 0 - newfloor.width:
             floors.pop(floors.index(newfloor))
             onFloor = True
 
     if not onFloor and not man.jumping:
-        man.y += 15
+        man.y += GRAVITY
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -238,11 +245,11 @@ while run:
                 newY = random.randrange(lastY - 100, lastY + 100) / 5 * 5
 
             floors.append(
-                floor(
+                Floor(
                     WIDTH,
                     newY,
-                    random.randrange(WIDTH - WIDTH / 4, WIDTH),
-                    random.randrange(5, 20),
+                    random.randrange(WIDTH - WIDTH / 6, WIDTH),
+                    20
                 )
             )
 
@@ -255,21 +262,12 @@ while run:
         man.x -= man.v
         man.sliding = False
 
-    if keys[pygame.K_SPACE] or keys[pygame.K_UP] and not ouch:
+    if keys[pygame.K_SPACE] or keys[pygame.K_UP] and not impededAbove:
         if onFloor:
             man.jumping = True
 
-    if MGX < MIDGROUND.get_width() * -1:
-        MGX = MIDGROUND2.get_width()
-
-    if MGX2 < MIDGROUND.get_width() * -1:
-        MGX2 = MIDGROUND2.get_width()
-
-    if FGX < BACKGROUND.get_width() * -1:
-        FGX = BACKGROUND.get_width()
-
-    if FGX2 < BACKGROUND.get_width() * -1:
-        FGX2 = BACKGROUND.get_width()
+    midground.checkBackgroundOffscreen()
+    foreground.checkBackgroundOffscreen()
 
     man.jump()
     redrawGameWindow()

@@ -37,12 +37,13 @@ class Background():
 
 class Player():
     runSkins = [
-        pygame.image.load("C1.png"),
-        pygame.image.load("C2.png"),
-        pygame.image.load("C3.png"),
-        pygame.image.load("C4.png"),
+        pygame.image.load("SideScroller/C1.png"),
+        pygame.image.load("SideScroller/C2.png"),
+        pygame.image.load("SideScroller/C3.png"),
+        pygame.image.load("SideScroller/C4.png"),
     ]
-    jumpSkin = pygame.image.load("J3.png")
+    jumpSkin = pygame.image.load("SideScroller/J3.png")
+    stillSkin = pygame.image.load("SideScroller/C5.png")
 
     def __init__(self, x, y, width, height):
         self.x = x
@@ -60,6 +61,7 @@ class Player():
         self.bottom = pygame.Rect(self.x, self.rect.bottom, 50, 10)
         self.right = pygame.Rect(self.rect.right, self.y, 1, 40)
         self.top = pygame.Rect(self.x, self.y, 50, 1)
+        self.still = False
 
     def draw(self, screen):
         self.rect = pygame.Rect(self.x, self.y, 40, 50)
@@ -76,8 +78,11 @@ class Player():
         else:
             if self.runCount >= 16:
                 self.runCount = 0
-            SCREEN.blit(self.runSkins[self.runCount // 4], (self.x, self.y))
-            self.runCount += 1
+            if not self.still:
+                SCREEN.blit(self.runSkins[self.runCount // 4], (self.x, self.y))
+                self.runCount += 1
+            else:
+                SCREEN.blit(self.stillSkin, (self.x, self.y))
 
     def jump(self):
         if self.jumping:
@@ -129,12 +134,15 @@ def redrawGameWindow():
 
 def endScreen():
     global score, FPS, floors, run
-    d = shelve.open("score.txt")
-    if score > d["score"]:
+    d = shelve.open("SideScroller/score.txt")
+    try:
+        if score > d["score"]:
+            d["score"] = score
+            highscore = score
+        else:
+            highscore = d["score"]
+    except KeyError:
         d["score"] = score
-        highscore = score
-    else:
-        highscore = d["score"]
     d.close()
     pygame.time.delay(100)
     ending = True
@@ -149,16 +157,18 @@ def endScreen():
         medFont = pygame.font.SysFont("courier", 55)
         lastScore = medFont.render("With a score of " + str(score), 1, WHITE)
         smolFont = pygame.font.SysFont("arial", 20)
-        highScore = smolFont.render("Highscore: " + str(highscore), 1, WHITE)
         newHighScore = smolFont.render("New High Score!", 1, WHITE)
         restart = smolFont.render("Press space to restart", 1, WHITE)
 
         SCREEN.blit(youDied, (WIDTH / 2 - youDied.get_width() / 2, HEIGHT / 2 - HEIGHT / 4))
         SCREEN.blit(lastScore, (WIDTH / 2 - lastScore.get_width() / 2, HEIGHT / 2))
-
-        if highscore > score:
-            SCREEN.blit(highScore, (WIDTH / 2 - highScore.get_width() / 2, HEIGHT / 2 + HEIGHT / 4),)
-        else:
+        try:
+            highScore = smolFont.render("Highscore: " + str(highscore), 1, WHITE)
+            if highscore > score:
+                SCREEN.blit(highScore, (WIDTH / 2 - highScore.get_width() / 2, HEIGHT / 2 + HEIGHT / 4),)
+            else:
+                SCREEN.blit(newHighScore, (WIDTH / 2 - newHighScore.get_width() / 2, HEIGHT / 2 + HEIGHT / 4),)
+        except:
             SCREEN.blit(newHighScore, (WIDTH / 2 - newHighScore.get_width() / 2, HEIGHT / 2 + HEIGHT / 4),)
 
         SCREEN.blit(restart, (WIDTH / 2 - restart.get_width() / 2, HEIGHT / 2 + HEIGHT / 3))
@@ -176,9 +186,9 @@ def endScreen():
     score = 0
 
 
-foreground = Background(0, pygame.image.load("Foreground.png").convert_alpha())
-midground = Background(0, pygame.image.load("Midground.png").convert_alpha())
-background = Background(0, pygame.image.load("Background.png").convert())
+foreground = Background(0, pygame.image.load("SideScroller/Foreground.png").convert_alpha())
+midground = Background(0, pygame.image.load("SideScroller/Midground.png").convert_alpha())
+background = Background(0, pygame.image.load("SideScroller/Background.png").convert())
 
 font = pygame.font.SysFont("courier", 30, True)
 man = Player(200, 150, 64, 64)
@@ -194,7 +204,7 @@ floors.append(Floor(0, HEIGHT / 2, WIDTH, 20))
 
 
 while run:
-    CLOCK.tick(FPS+score)
+    CLOCK.tick(FPS)
     midground.xOne -= 3
     midground.xTwo -= 3
     foreground.xOne -= 5
@@ -202,6 +212,7 @@ while run:
     impeded = False
     impededAbove = False
     onFloor = False
+    man.still = False
 
     for newfloor in floors:
         newfloor.x -= 5
@@ -222,7 +233,6 @@ while run:
 
         if newfloor.x < 0 - newfloor.width:
             floors.pop(floors.index(newfloor))
-            onFloor = True
 
     if not onFloor and not man.jumping:
         man.y += GRAVITY
@@ -232,26 +242,18 @@ while run:
             run = False
 
         if event.type == pygame.USEREVENT + 1:
-            FPS += 0.5
             score += 1
 
-        if len(floors) < 2:
-            lastY = floors[-1].y
-            if lastY > HEIGHT - 100:
-                newY = random.randrange(lastY - 100, HEIGHT) / 5 * 5
-            elif lastY < 100:
-                newY = random.randrange(100, lastY + 100)
-            else:
-                newY = random.randrange(lastY - 100, lastY + 100) / 5 * 5
+    if len(floors) < 2:
+        lastY = floors[-1].y
+        if lastY > HEIGHT - 100:
+            newY = random.randrange(lastY - 100, HEIGHT)
+        elif lastY < HEIGHT/2:
+            newY = random.randrange(100, HEIGHT/2 + 100)
+        else:
+            newY = random.randrange(lastY - 100, lastY + 100)
 
-            floors.append(
-                Floor(
-                    WIDTH,
-                    newY,
-                    random.randrange(WIDTH - WIDTH / 6, WIDTH),
-                    20
-                )
-            )
+        floors.append(Floor(WIDTH, newY, random.randrange(WIDTH-WIDTH/10, WIDTH), 20))
 
     keys = pygame.key.get_pressed()
 
@@ -261,6 +263,7 @@ while run:
     if keys[pygame.K_LEFT] and man.x > 0:
         man.x -= man.v
         man.sliding = False
+        man.still = True
 
     if keys[pygame.K_SPACE] or keys[pygame.K_UP] and not impededAbove:
         if onFloor:

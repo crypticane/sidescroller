@@ -18,10 +18,10 @@ GREY = (150, 150, 150)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
-JUMPTIME = 25
 GRAVITY = 5
 
 
+# class for moving and painting backgrounds
 class Background():
     def __init__(self, x, image, speed):
         self.image = image
@@ -39,6 +39,7 @@ class Background():
 
 
 class Player():
+    """creates a player with methods to draw and jump"""
     runSkins = [
         pygame.image.load("SideScroller/C1.png"),
         pygame.image.load("SideScroller/C2.png"),
@@ -51,22 +52,27 @@ class Player():
     def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
+
+        self.velocityY = 0
+        self.velocityX = 5
+        self.velocityJump = 200
+
         self.jumping = False
         self.sliding = False
+        self.still = False
+
         self.width = width
         self.height = height
-        self.v = 5
-        self.slideUp = False
-        self.jumptime = JUMPTIME
-        self.slideTime = 20
+
         self.runCount = 0
+
         self.rect = pygame.Rect(self.x, self.y, 50, 60)
         self.bottom = pygame.Rect(self.x, self.rect.bottom, 50, 10)
         self.right = pygame.Rect(self.rect.right, self.y, 1, 40)
         self.top = pygame.Rect(self.x, self.y, 50, 1)
-        self.still = False
 
     def draw(self, screen):
+        """Draw player skin on surface based on state."""
         self.rect = pygame.Rect(self.x, self.y, 40, 50)
         self.bottom = pygame.Rect(self.x, self.rect.bottom, 50, 10)
         self.right = pygame.Rect(self.rect.right, self.y, 1, 40)
@@ -74,9 +80,6 @@ class Player():
 
         if self.jumping:
             SCREEN.blit(self.jumpSkin, (self.x, self.y))
-
-        elif self.sliding or self.slideUp:
-            SCREEN.blit(self.slideSkin, (self.x, self.y))
 
         else:
             if self.runCount >= 16:
@@ -88,34 +91,36 @@ class Player():
                 SCREEN.blit(self.stillSkin, (self.x, self.y))
 
     def jump(self):
-        if self.jumping:
-            if self.jumptime >= -JUMPTIME:
-                neg = 1
-                if self.jumptime < 0:
-                    neg = -1
-                    if onFloor:
-                        self.jumping = False
-                if self.jumping:
-                    self.y += GRAVITY - self.jumptime ** 2 * (1/JUMPTIME) * neg
-                    self.jumptime -= 1
-                else:
-                    self.jumptime = JUMPTIME
-            else:
-                self.jumping = False
-                self.jumptime = JUMPTIME
+        """Causes player to jump."""
+        self.y -= self.velocityY-GRAVITY
+        self.velocityY -= GRAVITY
+        print(self.velocityY)
+        if onFloor:
+            self.velocityY = 0
+            self.jumping = False
 
 
 class Floor(object):
+    """Creates floors for the player to walk on.
+
+    """
+
     def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
+        self.speed = 5
         self.width = width
         self.height = height
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def draw(self, screen):
+        """Draws floor on surface at it's current position."""
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
         pygame.draw.rect(SCREEN, DGREY, self.rect)
+
+    def move(self):
+        """Moves floor from right to left."""
+        self.x -= self.speed
 
 
 def redrawGameWindow():
@@ -136,6 +141,7 @@ def redrawGameWindow():
 
 
 def endScreen():
+    """Screen to display once player dies"""
     global score, FPS, floors, run
     d = shelve.open("SideScroller/score.txt")
     try:
@@ -215,7 +221,7 @@ while run:
     man.still = False
 
     for newfloor in floors:
-        newfloor.x -= 5
+        newfloor.move()
 
         if man.bottom.colliderect(newfloor.rect):
             onFloor = True
@@ -228,7 +234,6 @@ while run:
 
         elif man.top.colliderect(newfloor.rect):
             jumping = False
-            jumptime = JUMPTIME
             impededAbove = True
 
         if newfloor.x < 0 - newfloor.width:
@@ -257,22 +262,23 @@ while run:
 
     keys = pygame.key.get_pressed()
 
-    if keys[pygame.K_RIGHT] and man.x < WIDTH - man.v and not impeded:
-        man.x += man.v
+    if keys[pygame.K_RIGHT] and man.x < WIDTH - man.velocityX and not impeded:
+        man.x += man.velocityX
 
     if keys[pygame.K_LEFT] and man.x > 0:
-        man.x -= man.v
+        man.x -= man.velocityX
         man.sliding = False
         man.still = True
 
     if keys[pygame.K_SPACE] or keys[pygame.K_UP] and not impededAbove:
         if onFloor:
+            man.velocityY = man.velocityJump
             man.jumping = True
 
     midground.update()
     foreground.update()
-
-    man.jump()
+    if(man.jumping):
+        man.jump()
     redrawGameWindow()
 
     if man.y > HEIGHT:

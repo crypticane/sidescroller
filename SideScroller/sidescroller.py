@@ -23,16 +23,19 @@ GRAVITY = 5
 
 
 class Background():
-    def __init__(self, x, image):
+    def __init__(self, x, image, speed):
         self.image = image
         self.xOne = 0
         self.xTwo = image.get_width()
+        self.speed = speed
 
-    def checkBackgroundOffscreen(self):
-        if self.xOne < self.image.get_width()*-1:
+    def update(self):
+        if self.xOne < -self.image.get_width():
             self.xOne = self.image.get_width()
-        if self.xTwo < self.image.get_width()*-1:
+        if self.xTwo < -self.image.get_width():
             self.xTwo = self.image.get_width()
+        self.xOne -= self.speed
+        self.xTwo -= self.speed
 
 
 class Player():
@@ -186,9 +189,9 @@ def endScreen():
     score = 0
 
 
-foreground = Background(0, pygame.image.load("SideScroller/Foreground.png").convert_alpha())
-midground = Background(0, pygame.image.load("SideScroller/Midground.png").convert_alpha())
-background = Background(0, pygame.image.load("SideScroller/Background.png").convert())
+foreground = Background(0, pygame.image.load("SideScroller/Foreground.png").convert_alpha(), 5)
+midground = Background(0, pygame.image.load("SideScroller/Midground.png").convert_alpha(), 3)
+background = Background(0, pygame.image.load("SideScroller/Background.png").convert(), 0)
 
 font = pygame.font.SysFont("courier", 30, True)
 man = Player(200, 150, 64, 64)
@@ -205,10 +208,7 @@ floors.append(Floor(0, HEIGHT / 2, WIDTH, 20))
 
 while run:
     CLOCK.tick(FPS)
-    midground.xOne -= 3
-    midground.xTwo -= 3
-    foreground.xOne -= 5
-    foreground.xTwo -= 5
+
     impeded = False
     impededAbove = False
     onFloor = False
@@ -269,8 +269,8 @@ while run:
         if onFloor:
             man.jumping = True
 
-    midground.checkBackgroundOffscreen()
-    foreground.checkBackgroundOffscreen()
+    midground.update()
+    foreground.update()
 
     man.jump()
     redrawGameWindow()

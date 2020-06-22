@@ -55,7 +55,7 @@ class Player():
 
         self.velocityY = 0
         self.velocityX = 5
-        self.velocityJump = 200
+        self.velocityJump = 30
 
         self.jumping = False
         self.sliding = False
@@ -92,9 +92,9 @@ class Player():
 
     def jump(self):
         """Causes player to jump."""
-        self.y -= self.velocityY-GRAVITY
-        self.velocityY -= GRAVITY
-        print(self.velocityY)
+        self.y -= self.velocityY+GRAVITY
+        if(self.velocityY >= -GRAVITY):
+            self.velocityY -= GRAVITY
         if onFloor:
             self.velocityY = 0
             self.jumping = False
@@ -233,7 +233,7 @@ while run:
             impeded = True
 
         elif man.top.colliderect(newfloor.rect):
-            jumping = False
+            man.jumping = False
             impededAbove = True
 
         if newfloor.x < 0 - newfloor.width:
@@ -274,6 +274,7 @@ while run:
         if onFloor:
             man.velocityY = man.velocityJump
             man.jumping = True
+            onFloor = False
 
     midground.update()
     foreground.update()

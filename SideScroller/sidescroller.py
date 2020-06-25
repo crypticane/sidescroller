@@ -194,6 +194,8 @@ class Enemy():
                 enemies.append(Floater(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 5))
             elif(enemyType == "Tracker"):
                 enemies.append(Tracker(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 6))
+            elif(enemyType == "Spiker"):
+                enemies.append(Spiker(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 5))
 
     def despawn(self):
         """Despawns enemy if it's offscreen"""
@@ -238,6 +240,28 @@ class Tracker(Enemy):
         if(self.x > man.x and self.x < WIDTH):
             error = man.y-self.y
             self.y += error/50
+        self.x -= self.speed
+
+
+class Spiker(Enemy):
+    def __init__(self, x, y, speed):
+        self.width = 30
+        self.height = 21
+        super().__init__(x, y, speed)
+        self.skins = [
+            pygame.image.load("SideScroller/Spiky1.png"),
+            pygame.image.load("SideScroller/Spiky2.png"),
+            pygame.image.load("SideScroller/Spiky3.png"),
+            pygame.image.load("SideScroller/Spiky4.png")
+        ]
+        self.y = platforms[-1].y - self.height
+        if(platforms[-1].x > WIDTH):
+            self.x = platforms[-1].x+random.randrange(0, WIDTH-WIDTH/8)
+        else:
+            self.x = WIDTH
+
+    def move(self):
+        """Moves enemy from right to left, despawn if in floor"""
         self.x -= self.speed
 
 
@@ -323,7 +347,7 @@ background = Background(0, pygame.image.load("SideScroller/Background.png").conv
 font = pygame.font.SysFont("courier", 30, True)
 man = Player(200, 150, 64, 64)
 enemies = []
-types = ["Floater", "Floater", "Floater", "Tracker"]
+types = ["Floater", "Floater", "Spiker", "Spiker", "Spiker", "Tracker"]
 run = True
 FPS = 60
 

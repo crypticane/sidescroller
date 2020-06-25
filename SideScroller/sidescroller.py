@@ -157,6 +157,10 @@ class Platform():
         if self.x < 0 - self.width:
             platforms.pop(platforms.index(self))
 
+    def inPlatform(self, obj):
+        if obj.rect.colliderect(self.rect):
+            return True
+
 
 class Enemy():
     def __init__(self, x, y, speed):
@@ -166,6 +170,7 @@ class Enemy():
         self.count = 0
         self.speed = speed
         self.skincount = 0
+        self.skins = []
 
     def draw(self, screen):
         """Draws enemy on surface at it's current position."""
@@ -173,12 +178,8 @@ class Enemy():
         if self.skincount >= 9:
             self.skincount = 0
             self.count = 0
-        SCREEN.blit(self.skins[math.floor(self.skincount) // 3], (self.x, self.y))
+        SCREEN.blit(self.skins[math.floor(self.skincount) // len(self.skins)], (self.x, self.y))
         self.skincount += 0.5
-
-    def move(self):
-        """Moves enemy from right to left."""
-        self.x -= self.speed
 
     def checkCollision(self):
         """Check if player and enemy collide"""
@@ -187,26 +188,57 @@ class Enemy():
 
     @staticmethod
     def spawn():
-        if len(enemies) < 5:
-            enemies.append(Floater(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 5))
+        if len(enemies) < score/3:
+            enemyType = types[random.randrange(0, len(types))]
+            if(enemyType == "Floater"):
+                enemies.append(Floater(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 5))
+            elif(enemyType == "Tracker"):
+                enemies.append(Tracker(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 6))
 
     def despawn(self):
-        """Despawns enemy if it's offscreen."""
+        """Despawns enemy if it's offscreen"""
         if self.x < 0 - self.width:
             enemies.pop(enemies.index(self))
 
 
 class Floater(Enemy):
+    """Enemy which floats straight forwards"""
+
     def __init__(self, x, y, speed):
         self.width = 25
         self.height = 25
         super().__init__(x, y, speed)
+        self.skins = [
+            pygame.image.load("SideScroller/BlueFly1.png"),
+            pygame.image.load("SideScroller/BlueFly2.png"),
+            pygame.image.load("SideScroller/BlueFly3.png"),
+        ]
 
-    skins = [
-        pygame.image.load("SideScroller/BlueFly1.png"),
-        pygame.image.load("SideScroller/BlueFly2.png"),
-        pygame.image.load("SideScroller/BlueFly3.png"),
-    ]
+    def move(self):
+        """Moves enemy from right to left, despawn if in floor"""
+        self.x -= self.speed
+        if(platforms[-1].inPlatform(self)):
+            enemies.pop(enemies.index(self))
+
+
+class Tracker(Enemy):
+    def __init__(self, x, y, speed):
+        self.width = 16
+        self.height = 16
+        super().__init__(x, y, speed)
+        self.skins = [
+            pygame.image.load("SideScroller/BagFly1.png"),
+            pygame.image.load("SideScroller/BagFly2.png"),
+            pygame.image.load("SideScroller/BagFly3.png"),
+            pygame.image.load("SideScroller/BagFly4.png")
+        ]
+
+    def move(self):
+        """Moves enemy from right to left, despawn if in floor"""
+        if(self.x > man.x and self.x < WIDTH):
+            error = man.y-self.y
+            self.y += error/50
+        self.x -= self.speed
 
 
 def redrawGameWindow():
@@ -230,8 +262,9 @@ def redrawGameWindow():
 
 def endScreen():
     """Screen to display once player dies"""
-    global score, FPS, platforms, run
+    global score, FPS, platforms, run, enemies
     d = shelve.open("SideScroller/score.txt")
+    enemies = []
     try:
         if score > d["score"]:
             d["score"] = score
@@ -290,7 +323,7 @@ background = Background(0, pygame.image.load("SideScroller/Background.png").conv
 font = pygame.font.SysFont("courier", 30, True)
 man = Player(200, 150, 64, 64)
 enemies = []
-
+types = ["Floater", "Floater", "Floater", "Tracker"]
 run = True
 FPS = 60
 
@@ -337,11 +370,13 @@ while run:
         man.sliding = False
         man.still = True
 
-    if keys[pygame.K_SPACE] or keys[pygame.K_UP] and not impededAbove:
-        if onFloor:
-            man.velocityY = man.velocityJump
-            man.jumping = True
-            onFloor = False
+    if keys[pygame.K_SPACE] or keys[pygame.K_UP] and not impededAbove and onFloor:
+        man.velocityY = man.velocityJump
+        man.jumping = True
+        onFloor = False
+
+    if keys[pygame.K_DOWN] and not onFloor:
+        man.y += GRAVITY
 
     Platform.spawn()
     midground.update()

@@ -190,11 +190,11 @@ class Enemy():
     def spawn():
         if len(enemies) < score/3:
             enemyType = types[random.randrange(0, len(types))]
-            if(enemyType == "Floater"):
+            if enemyType == "Floater":
                 enemies.append(Floater(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 5))
-            elif(enemyType == "Tracker"):
+            elif enemyType == "Tracker":
                 enemies.append(Tracker(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 6))
-            elif(enemyType == "Spiker"):
+            elif enemyType == "Spiker":
                 enemies.append(Spiker(random.randrange(WIDTH, WIDTH*2), random.randrange(0, HEIGHT), 5))
 
     def despawn(self):
@@ -278,7 +278,7 @@ def redrawGameWindow():
         enemy.draw(SCREEN)
     man.draw(SCREEN)
     text = font.render("Score: " + str(score), 1, BLACK)
-    text_width, text_height = font.size("Score: " + str(score))
+    text_width, _text_height = font.size("Score: " + str(score))
     SCREEN.blit(text, (WIDTH - text_width, 10))
 
     pygame.display.update()

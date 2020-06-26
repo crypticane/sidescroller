@@ -306,13 +306,10 @@ def endScreen():
     platforms.append(Platform(0, HEIGHT / 2, WIDTH, 20))
     SCREEN.fill(BLACK)
     while ending:
-        largeFont = pygame.font.SysFont("courier", 80)
         youDied = largeFont.render("You died.", 1, WHITE)
-        medFont = pygame.font.SysFont("courier", 55)
-        lastScore = medFont.render("With a score of " + str(score), 1, WHITE)
-        smolFont = pygame.font.SysFont("arial", 20)
-        newHighScore = smolFont.render("New High Score!", 1, WHITE)
-        restart = smolFont.render("Press space to restart", 1, WHITE)
+        lastScore = medFont.render("Score: " + str(score), 0, WHITE)
+        newHighScore = smolFont.render("New High Score!", 0, WHITE)
+        restart = smolFont.render("Press space to restart", 0, WHITE)
 
         SCREEN.blit(youDied, (WIDTH / 2 - youDied.get_width() / 2, HEIGHT / 2 - HEIGHT / 4))
         SCREEN.blit(lastScore, (WIDTH / 2 - lastScore.get_width() / 2, HEIGHT / 2))
@@ -340,6 +337,40 @@ def endScreen():
     score = 0
 
 
+def startScreen():
+    global run
+    d = shelve.open("SideScroller/score.txt")
+    try:
+        highscore = smolFont.render("Highscore: " + str(d["score"]), 0, BLACK)
+    except(KeyError):
+        highscore = smolFont.render("No highscore")
+    starting = True
+    SCREEN.fill(WHITE)
+    while starting:
+
+        title = largeFont.render("Sidescroller!", 0, BLACK)
+        subtitle = medFont.render("What? It is!", 0, BLACK)
+        presstostart = smolFont.render("Press space to start", 0, BLACK)
+        SCREEN.blit(title, (WIDTH / 2 - title.get_width() / 2, HEIGHT / 2 - HEIGHT / 4))
+        SCREEN.blit(subtitle, (WIDTH / 2 - subtitle.get_width() / 2, HEIGHT / 2))
+        SCREEN.blit(highscore, (WIDTH / 2 - highscore.get_width() / 2, HEIGHT/2 + HEIGHT / 3))
+        SCREEN.blit(presstostart, (WIDTH / 2 - presstostart.get_width() / 2, HEIGHT / 2 + HEIGHT / 4),)
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                starting = False
+                run = False
+
+        keys = pygame.key.get_pressed()
+
+        if (keys[pygame.K_SPACE] or keys[pygame.K_ESCAPE] or keys[pygame.K_KP_ENTER] or keys[pygame.K_ESCAPE]):
+            starting = False
+
+
+largeFont = pygame.font.SysFont("courier", 80)
+medFont = pygame.font.SysFont("courier", 55)
+smolFont = pygame.font.SysFont("arial", 20)
+
 foreground = Background(0, pygame.image.load("SideScroller/Foreground.png").convert_alpha(), 5)
 midground = Background(0, pygame.image.load("SideScroller/Midground.png").convert_alpha(), 3)
 background = Background(0, pygame.image.load("SideScroller/Background.png").convert(), 0)
@@ -356,7 +387,7 @@ platforms = []
 pygame.time.set_timer(pygame.USEREVENT + 1, 2000)
 platforms.append(Platform(0, HEIGHT / 2, WIDTH, 20))
 
-
+startScreen()
 while run:
     CLOCK.tick(FPS)
 
